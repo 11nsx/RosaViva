@@ -1,0 +1,6 @@
+{
+  "name": "RosaViva - Quiz Outubro Rosa",
+  "description": "Quiz educativo interativo e acessível sobre conscientização, prevenção e diagnóstico precoce do câncer de mama na campanha Outubro Rosa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

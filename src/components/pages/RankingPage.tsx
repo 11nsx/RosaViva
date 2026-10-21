@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   Trophy,
-  Trash2,
   RotateCcw,
   Clock,
-  Sparkles,
   Calendar,
-  AlertTriangle,
 } from 'lucide-react';
 import { PageTab } from '../../types/navigation';
 import { soundEffects } from '../../services/soundEffects';
-import { fetchRanking, clearRanking, RankingItem } from '../../services/rankingService';
+import { fetchRanking, RankingItem } from '../../services/rankingService';
 
 interface RankingPageProps {
   onNavigateTab: (tab: PageTab) => void;
@@ -19,7 +16,6 @@ interface RankingPageProps {
 export const RankingPage: React.FC<RankingPageProps> = ({ onNavigateTab }) => {
   const [rankingList, setRankingList] = useState<RankingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [showConfirmClear, setShowConfirmClear] = useState<boolean>(false);
 
   const loadRanking = async () => {
     setLoading(true);
@@ -36,13 +32,6 @@ export const RankingPage: React.FC<RankingPageProps> = ({ onNavigateTab }) => {
   useEffect(() => {
     loadRanking();
   }, []);
-
-  const handleClearRanking = async () => {
-    soundEffects.playClick();
-    await clearRanking();
-    setRankingList([]);
-    setShowConfirmClear(false);
-  };
 
   const formatDate = (isoStr: string) => {
     try {
@@ -65,14 +54,14 @@ export const RankingPage: React.FC<RankingPageProps> = ({ onNavigateTab }) => {
       <header className="space-y-2">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 text-xs font-semibold">
           <Trophy className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-          <span>Placar de Conscientização · RosaViva</span>
+          <span>Placar Oficial · RosaViva</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold font-heading text-pink-950 dark:text-pink-100">
           Ranking dos Participantes
         </h1>
         <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-300 max-w-2xl leading-relaxed">
-          Resultados do quiz salvos com suporte a API no backend (Vercel) e sincronização local.
-          Celebre o conhecimento compartilhado em prol da saúde da mulher!
+          Resultados do quiz gravados de forma persistente. Celebre o conhecimento compartilhado
+          em prol da prevenção e do diagnóstico precoce do câncer de mama!
         </p>
       </header>
 
@@ -96,25 +85,21 @@ export const RankingPage: React.FC<RankingPageProps> = ({ onNavigateTab }) => {
                 soundEffects.playClick();
                 loadRanking();
               }}
-              className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 text-xs font-semibold cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-semibold cursor-pointer flex items-center gap-1.5 transition-colors"
               title="Recarregar ranking"
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Atualizar Placar</span>
             </button>
+
             <button
               onClick={() => {
                 soundEffects.playClick();
-                setShowConfirmClear(true);
+                onNavigateTab('quiz');
               }}
-              disabled={rankingList.length === 0}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                rankingList.length > 0
-                  ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 hover:bg-rose-100'
-                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed'
-              }`}
+              className="px-4 py-2 rounded-xl bg-pink-700 hover:bg-pink-600 text-white font-bold text-xs cursor-pointer shadow-xs transition-colors"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Limpar ranking</span>
+              Fazer o Quiz
             </button>
           </div>
         </div>
@@ -217,53 +202,17 @@ export const RankingPage: React.FC<RankingPageProps> = ({ onNavigateTab }) => {
           </div>
         )}
 
-        {/* Information note */}
+        {/* Informações de ordenação e autoria */}
         <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-400 space-y-1">
           <div>
             <strong>Critério de Ordenação:</strong> Maior pontuação em primeiro lugar. Em caso de
-            empate, quem concluiu no menor tempo ou com maior antecedência fica à frente.
+            empate, quem concluiu no menor tempo fica à frente.
           </div>
           <div>
-            Projeto concebido e realizado pelo <strong>Time Preto do Grupo Steve Jobs</strong>.
+            Projeto concebido e realizado com carinho pelo <strong>Time Preto do Grupo Steve Jobs</strong>.
           </div>
         </div>
       </div>
-
-      {/* Confirmation Modal to Clear Ranking */}
-      {showConfirmClear && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="bg-white dark:bg-zinc-900 border border-pink-200 dark:border-zinc-800 rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 mx-auto flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-            <h3 className="font-heading font-bold text-lg text-pink-950 dark:text-pink-100">
-              Apagar resultados do ranking?
-            </h3>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Todos os resultados do quiz registrados no ranking serão apagados. As preferências de tema e
-              acessibilidade serão mantidas. Esta ação não pode ser desfeita.
-            </p>
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                onClick={() => setShowConfirmClear(false)}
-                className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 font-semibold text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleClearRanking}
-                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 font-bold text-xs text-white cursor-pointer"
-              >
-                Sim, apagar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

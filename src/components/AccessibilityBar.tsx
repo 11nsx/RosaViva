@@ -6,6 +6,7 @@ import {
   AudioWaveform,
   Ear,
   Type,
+  Eye,
 } from 'lucide-react';
 import { AccessibilitySettings } from '../types/quiz';
 import { soundEffects } from '../services/soundEffects';
@@ -46,15 +47,16 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
       aria-label="Barra de Acessibilidade Rápida"
       className="w-full bg-pink-100/80 dark:bg-zinc-900 border-b border-pink-200/80 dark:border-zinc-800 transition-colors py-2 px-3 sm:px-4 text-xs font-medium text-pink-950 dark:text-pink-100 sticky top-0 z-30"
     >
-      <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
-        {/* Main Accessibility Trigger Button - Highly intuitive and prominent */}
+      <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
+        {/* Main Accessibility Trigger Button */}
         <button
           onClick={() => {
             soundEffects.playClick();
             onOpenAccessibilityModal();
           }}
+          type="button"
           className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-pink-700 hover:bg-pink-600 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
-          title="Abrir Central de Acessibilidade (Libras, Daltonismo, Modo Escuro, Fonte)"
+          title="Abrir Central de Acessibilidade (Daltonismo, Libras, Tema, Fonte, Som)"
           aria-label="Abrir opções de acessibilidade"
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -64,14 +66,33 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
           )}
         </button>
 
-        {/* Quick Direct Controls with large touch targets for mobile */}
+        {/* Quick Direct Controls */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          {/* 1. Libras */}
+          {/* Direct Daltonismo Button */}
+          <button
+            onClick={() => {
+              soundEffects.playClick();
+              onOpenAccessibilityModal();
+            }}
+            type="button"
+            className="flex items-center gap-1 py-1.5 px-2.5 rounded-xl bg-white/90 dark:bg-zinc-800 hover:bg-pink-50 dark:hover:bg-zinc-700 border border-pink-200 dark:border-zinc-700 text-pink-900 dark:text-pink-200 transition-colors cursor-pointer shrink-0"
+            title="Ajustar Filtro para Daltonismo"
+            aria-label="Modo Daltonismo"
+          >
+            <Eye className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
+            <span className="text-xs font-semibold">Daltonismo</span>
+            {settings.colorBlindness !== 'none' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-pink-600 dark:bg-pink-400"></span>
+            )}
+          </button>
+
+          {/* Libras */}
           <button
             onClick={() => {
               soundEffects.playClick();
               onOpenLibrasModal();
             }}
+            type="button"
             className="flex items-center gap-1 py-1.5 px-2.5 rounded-xl bg-white/90 dark:bg-zinc-800 hover:bg-pink-50 dark:hover:bg-zinc-700 border border-pink-200 dark:border-zinc-700 text-pink-900 dark:text-pink-200 transition-colors cursor-pointer shrink-0"
             title="Acessibilidade em Libras e Guia de Sinais"
             aria-label="Libras"
@@ -80,12 +101,13 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
             <span className="text-xs font-semibold">Libras</span>
           </button>
 
-          {/* 2. Text-to-Speech Narrator */}
+          {/* Text-to-Speech Narrator */}
           <button
             onClick={() => {
               soundEffects.playClick();
               onToggleSpeech();
             }}
+            type="button"
             className={`flex items-center gap-1 py-1.5 px-2.5 rounded-xl border transition-colors cursor-pointer shrink-0 ${
               isReadingText
                 ? 'bg-pink-600 text-white border-pink-600 animate-pulse'
@@ -98,9 +120,10 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
             <span className="text-xs font-semibold">{isReadingText ? 'Ouvindo...' : 'Voz'}</span>
           </button>
 
-          {/* 3. Font Size Quick Adjuster */}
+          {/* Font Size Quick Adjuster */}
           <button
             onClick={handleFontSizeCycle}
+            type="button"
             className="flex items-center gap-1 py-1.5 px-2 rounded-xl bg-white/90 dark:bg-zinc-800 hover:bg-pink-50 dark:hover:bg-zinc-700 border border-pink-200 dark:border-zinc-700 text-pink-900 dark:text-pink-200 transition-colors cursor-pointer shrink-0"
             title="Ajustar Tamanho da Fonte (A- / A / A+)"
             aria-label={`Tamanho da fonte: ${settings.fontSize}`}
@@ -114,9 +137,10 @@ export const AccessibilityBar: React.FC<AccessibilityBarProps> = ({
             </span>
           </button>
 
-          {/* 4. Dark Mode Quick Toggle */}
+          {/* Dark Mode Quick Toggle */}
           <button
             onClick={toggleDarkMode}
+            type="button"
             className="p-1.5 rounded-xl bg-white/90 dark:bg-zinc-800 hover:bg-pink-50 dark:hover:bg-zinc-700 border border-pink-200 dark:border-zinc-700 text-pink-900 dark:text-pink-200 transition-colors cursor-pointer shrink-0"
             title={settings.darkMode ? 'Modo Claro' : 'Modo Escuro'}
             aria-label="Alternar Tema Claro/Escuro"

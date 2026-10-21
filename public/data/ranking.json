@@ -1,0 +1,35 @@
+[
+  {
+    "id": "rank_steve_jobs_001",
+    "nickname": "Time Preto (Steve Jobs)",
+    "score": 100,
+    "correctCount": 10,
+    "totalQuestions": 10,
+    "percentage": 100,
+    "timeSeconds": 135,
+    "formattedTime": "02:15",
+    "createdAt": "2026-10-21T18:00:00.000Z"
+  },
+  {
+    "id": "rank_ana_002",
+    "nickname": "Ana Conscientizadora",
+    "score": 90,
+    "correctCount": 9,
+    "totalQuestions": 10,
+    "percentage": 90,
+    "timeSeconds": 164,
+    "formattedTime": "02:44",
+    "createdAt": "2026-10-21T17:30:00.000Z"
+  },
+  {
+    "id": "rank_estudante_003",
+    "nickname": "Estudante Outubro Rosa",
+    "score": 80,
+    "correctCount": 8,
+    "totalQuestions": 10,
+    "percentage": 80,
+    "timeSeconds": 195,
+    "formattedTime": "03:15",
+    "createdAt": "2026-10-21T16:45:00.000Z"
+  }
+]

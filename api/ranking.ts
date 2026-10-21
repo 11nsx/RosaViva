@@ -17,7 +17,7 @@ export interface RankingItem {
 
 let inMemoryRanking: RankingItem[] = [
   {
-    id: 'demo-1',
+    id: 'rank_steve_jobs_001',
     nickname: 'Time Preto (Steve Jobs)',
     score: 100,
     correctCount: 10,
@@ -25,24 +25,35 @@ let inMemoryRanking: RankingItem[] = [
     percentage: 100,
     timeSeconds: 135,
     formattedTime: '02:15',
-    createdAt: new Date().toISOString(),
+    createdAt: '2026-10-21T18:00:00.000Z',
   },
   {
-    id: 'demo-2',
-    nickname: 'Conscientização Viva',
+    id: 'rank_ana_002',
+    nickname: 'Ana Conscientizadora',
     score: 90,
     correctCount: 9,
     totalQuestions: 10,
     percentage: 90,
     timeSeconds: 164,
     formattedTime: '02:44',
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    createdAt: '2026-10-21T17:30:00.000Z',
+  },
+  {
+    id: 'rank_estudante_003',
+    nickname: 'Estudante Outubro Rosa',
+    score: 80,
+    correctCount: 8,
+    totalQuestions: 10,
+    percentage: 80,
+    timeSeconds: 195,
+    formattedTime: '03:15',
+    createdAt: '2026-10-21T16:45:00.000Z',
   },
 ];
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -81,11 +92,6 @@ export default async function handler(req: any, res: any) {
 
     inMemoryRanking.push(newEntry);
     return res.status(201).json(newEntry);
-  }
-
-  if (req.method === 'DELETE') {
-    inMemoryRanking = [];
-    return res.status(200).json({ success: true, message: 'Ranking limpo com sucesso' });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });

@@ -59,8 +59,9 @@ function rankingApiPlugin(): Plugin {
               try {
                 const parsed = JSON.parse(body || '{}');
                 const list = readEntries();
-                const newEntry = {
-                  id: 'rank_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+                const targetId = parsed.id || ('rank_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6));
+                const entryData = {
+                  id: targetId,
                   nickname: (parsed.nickname || 'Participante RosaViva').slice(0, 24),
                   score: Number(parsed.score) || 0,
                   correctCount: Number(parsed.correctCount) || 0,
@@ -68,12 +69,19 @@ function rankingApiPlugin(): Plugin {
                   percentage: Number(parsed.percentage) || 0,
                   timeSeconds: Number(parsed.timeSeconds) || 0,
                   formattedTime: parsed.formattedTime || '00:00',
-                  createdAt: new Date().toISOString(),
+                  createdAt: parsed.createdAt || new Date().toISOString(),
                 };
-                list.push(newEntry);
+
+                const existingIndex = list.findIndex((item: any) => item.id === targetId);
+                if (existingIndex >= 0) {
+                  list[existingIndex] = { ...list[existingIndex], ...entryData };
+                } else {
+                  list.push(entryData);
+                }
+
                 writeEntries(list);
-                res.statusCode = 201;
-                res.end(JSON.stringify(newEntry));
+                res.statusCode = 200;
+                res.end(JSON.stringify(entryData));
               } catch {
                 res.statusCode = 400;
                 res.end(JSON.stringify({ error: 'Formato inválido' }));

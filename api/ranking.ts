@@ -78,8 +78,9 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    const newEntry: RankingItem = {
-      id: 'rank_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    const targetId = body.id || ('rank_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
+    const entryData: RankingItem = {
+      id: targetId,
       nickname: (body.nickname || 'Participante RosaViva').toString().trim().slice(0, 24),
       score: Number(body.score) || 0,
       correctCount: Number(body.correctCount) || 0,
@@ -87,11 +88,17 @@ export default async function handler(req: any, res: any) {
       percentage: Number(body.percentage) || 0,
       timeSeconds: Number(body.timeSeconds) || 0,
       formattedTime: body.formattedTime || '00:00',
-      createdAt: new Date().toISOString(),
+      createdAt: body.createdAt || new Date().toISOString(),
     };
 
-    inMemoryRanking.push(newEntry);
-    return res.status(201).json(newEntry);
+    const existingIndex = inMemoryRanking.findIndex((item) => item.id === targetId);
+    if (existingIndex >= 0) {
+      inMemoryRanking[existingIndex] = { ...inMemoryRanking[existingIndex], ...entryData };
+    } else {
+      inMemoryRanking.push(entryData);
+    }
+
+    return res.status(200).json(entryData);
   }
 
   return res.status(405).json({ error: 'Method not allowed' });

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Ear, Sparkles, ExternalLink, HelpCircle } from 'lucide-react';
 import { soundEffects } from '../services/soundEffects';
 
@@ -8,7 +9,24 @@ interface LibrasGuideModalProps {
 }
 
 export const LibrasGuideModal: React.FC<LibrasGuideModalProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock body scroll when open
+  useEffect(() => {
+    if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !mounted) return null;
 
   const handleActivateVLibras = () => {
     soundEffects.playClick();
@@ -53,14 +71,29 @@ export const LibrasGuideModal: React.FC<LibrasGuideModalProps> = ({ isOpen, onCl
     },
   ];
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="libras-modal-title"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100dvh',
+        zIndex: 99999,
+        margin: 0,
+      }}
+      onClick={onClose}
     >
-      <div className="bg-white dark:bg-zinc-900 border border-pink-200 dark:border-zinc-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 text-zinc-800 dark:text-zinc-200">
+      <div
+        className="bg-white dark:bg-zinc-900 border border-pink-200 dark:border-zinc-800 rounded-3xl max-w-2xl w-full max-h-[85vh] max-h-[85dvh] overflow-y-auto shadow-2xl p-5 sm:p-6 text-zinc-800 dark:text-zinc-200 my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-pink-100 dark:border-zinc-800 pb-4">
           <div className="flex items-center gap-3">
@@ -167,4 +200,6 @@ export const LibrasGuideModal: React.FC<LibrasGuideModalProps> = ({ isOpen, onCl
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };

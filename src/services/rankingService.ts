@@ -113,6 +113,7 @@ export async function fetchRanking(): Promise<RankingItem[]> {
 }
 
 export async function saveRankingEntry(entry: {
+  id?: string;
   nickname: string;
   score: number;
   correctCount: number;
@@ -121,36 +122,43 @@ export async function saveRankingEntry(entry: {
   timeSeconds: number;
   formattedTime: string;
 }): Promise<RankingItem> {
-  const payload = {
-    ...entry,
-    nickname: (entry.nickname.trim() || 'Participante RosaViva').slice(0, 24),
-  };
+  const targetId = entry.id || ('rank_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6));
+  const cleanNickname = (entry.nickname.trim() || 'Participante RosaViva').slice(0, 24);
 
   const newEntry: RankingItem = {
-    id: 'rank_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-    nickname: payload.nickname,
-    score: payload.score,
-    correctCount: payload.correctCount,
-    totalQuestions: payload.totalQuestions,
-    percentage: payload.percentage,
-    timeSeconds: payload.timeSeconds,
-    formattedTime: payload.formattedTime,
+    id: targetId,
+    nickname: cleanNickname,
+    score: entry.score,
+    correctCount: entry.correctCount,
+    totalQuestions: entry.totalQuestions,
+    percentage: entry.percentage,
+    timeSeconds: entry.timeSeconds,
+    formattedTime: entry.formattedTime,
     createdAt: new Date().toISOString(),
   };
 
   // 1. Immediately persist to localStorage
   try {
     const current = await fetchRanking();
-    const updated = mergeAndSortEntries([newEntry], current);
+    const existingIdx = current.findIndex((item) => item.id === targetId);
+    let updated: RankingItem[];
+    if (existingIdx >= 0) {
+      updated = [...current];
+      updated[existingIdx] = { ...updated[existingIdx], ...newEntry };
+    } else {
+      updated = mergeAndSortEntries([newEntry], current);
+    }
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-  } catch {}
+  } catch (err) {
+    console.warn('Erro ao salvar no localStorage:', err);
+  }
 
   // 2. Persist to Backend API
   try {
     await fetch('/api/ranking', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(newEntry),
     });
   } catch (err) {
     console.warn('Erro ao salvar no backend, preservado no localStorage:', err);

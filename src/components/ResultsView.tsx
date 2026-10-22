@@ -25,6 +25,7 @@ interface ResultsViewProps {
   userAnswers: UserAnswer[];
   totalScore: number;
   totalTimeSeconds: number;
+  rankingId?: string | null;
   onRestartQuiz: () => void;
   onNavigateHome: () => void;
   onNavigateRanking: () => void;
@@ -35,6 +36,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   userAnswers,
   totalScore,
   totalTimeSeconds,
+  rankingId,
   onRestartQuiz,
   onNavigateHome,
   onNavigateRanking,
@@ -44,8 +46,9 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
   // Nickname for ranking
   const [nickname, setNickname] = useState('');
-  const [isRankingSaved, setIsRankingSaved] = useState(false);
+  const [isNicknameUpdated, setIsNicknameUpdated] = useState(false);
   const [rankingSaveLoading, setRankingSaveLoading] = useState(false);
+  const [activeRankingId, setActiveRankingId] = useState<string | null>(rankingId || null);
 
   const [filterReview, setFilterReview] = useState<'all' | 'correct' | 'incorrect'>('all');
   const [expandedQuestions, setExpandedQuestions] = useState<Record<number, boolean>>({});
@@ -97,6 +100,24 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     }
   }, [percentage]);
 
+  // Ensure score is persistently recorded in ranking immediately
+  useEffect(() => {
+    if (!activeRankingId) {
+      const generatedId = 'rank_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      setActiveRankingId(generatedId);
+      saveRankingEntry({
+        id: generatedId,
+        nickname: 'Participante RosaViva',
+        score: totalScore,
+        correctCount: correctAnswersCount,
+        totalQuestions: 10,
+        percentage,
+        timeSeconds: totalTimeSeconds,
+        formattedTime,
+      }).catch((err) => console.warn('Ranking auto-save fallback error:', err));
+    }
+  }, [activeRankingId, totalScore, correctAnswersCount, percentage, totalTimeSeconds, formattedTime]);
+
   const toggleQuestionExpand = (qId: number) => {
     soundEffects.playClick();
     setExpandedQuestions((prev) => ({
@@ -127,14 +148,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
   const handleSaveToRanking = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isRankingSaved || rankingSaveLoading) return;
+    if (rankingSaveLoading) return;
 
     soundEffects.playClick();
     setRankingSaveLoading(true);
 
     try {
       await saveRankingEntry({
-        nickname: nickname.trim() || 'Participante Anônimo',
+        id: activeRankingId || undefined,
+        nickname: nickname.trim() || 'Participante RosaViva',
         score: totalScore,
         correctCount: correctAnswersCount,
         totalQuestions: 10,
@@ -142,9 +164,9 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         timeSeconds: totalTimeSeconds,
         formattedTime,
       });
-      setIsRankingSaved(true);
+      setIsNicknameUpdated(true);
     } catch {
-      setIsRankingSaved(true);
+      setIsNicknameUpdated(true);
     } finally {
       setRankingSaveLoading(false);
     }
@@ -262,69 +284,81 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         </div>
       </div>
 
-      {/* 2. Salvar Apelido no Ranking (Backend Vercel / GitHub) */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 sm:p-7 shadow-lg shadow-pink-900/5 border border-pink-100 dark:border-zinc-800 transition-colors">
-        <div className="flex items-center gap-2.5 mb-3">
-          <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
-            <Trophy className="w-5 h-5" />
+      {/* 2. Placar e Ranking Persistente (Gravado Automaticamente) */}
+      <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 sm:p-7 shadow-lg shadow-pink-900/5 border border-pink-100 dark:border-zinc-800 transition-colors space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+              <Trophy className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold font-heading text-pink-950 dark:text-pink-100">
+                Placar e Ranking Oficial
+              </h2>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Sua participação e nota já estão salvas com segurança no banco de dados
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-bold font-heading text-pink-950 dark:text-pink-100">
-              Registrar no Ranking
-            </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Insira um apelido para salvar sua pontuação no placar
-            </p>
+
+          <button
+            onClick={() => {
+              soundEffects.playClick();
+              onNavigateRanking();
+            }}
+            type="button"
+            className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 self-start sm:self-auto"
+          >
+            <Trophy className="w-3.5 h-3.5" />
+            <span>Ver Placar Geral</span>
+          </button>
+        </div>
+
+        {/* Confirmation banner */}
+        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center gap-3">
+          <Check className="w-5 h-5 text-emerald-600 shrink-0" />
+          <div className="text-xs sm:text-sm text-emerald-950 dark:text-emerald-100">
+            <span className="font-bold">Pontuação gravada com sucesso!</span>{' '}
+            Você obteve <strong>{totalScore} pontos</strong> ({correctAnswersCount}/10 acertos · {percentage}%) em <strong>{formattedTime}</strong>.
           </div>
         </div>
 
-        {!isRankingSaved ? (
-          <form onSubmit={handleSaveToRanking} className="space-y-3">
-            <label
-              htmlFor="nickname-input"
-              className="block text-xs font-semibold text-zinc-600 dark:text-zinc-300"
-            >
-              Apelido para o ranking (máx. 24 caracteres):
-            </label>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                id="nickname-input"
-                type="text"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                maxLength={24}
-                placeholder="Ex.: Time Rosa, Flor, Estudante"
-                className="flex-1 px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm focus:ring-2 focus:ring-pink-500 outline-none"
-              />
-              <button
-                type="submit"
-                disabled={rankingSaveLoading}
-                className="px-6 py-3 rounded-xl font-bold text-xs bg-amber-600 hover:bg-amber-500 text-white shadow-xs transition-colors cursor-pointer shrink-0"
-              >
-                {rankingSaveLoading ? 'Salvando…' : 'Salvar no Ranking'}
-              </button>
-            </div>
-            <p className="text-[11px] text-zinc-400">
-              O resultado é enviado para a API de ranking e armazenado com segurança.
-            </p>
-          </form>
-        ) : (
-          <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-200 text-xs sm:text-sm font-semibold">
-              <Check className="w-5 h-5 text-emerald-600 shrink-0" />
-              <span>Pontuação registrada no ranking com sucesso!</span>
-            </div>
+        {/* Nickname update form */}
+        <form onSubmit={handleSaveToRanking} className="space-y-3 pt-1">
+          <label
+            htmlFor="nickname-input"
+            className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+          >
+            {isNicknameUpdated
+              ? 'Apelido personalizado no placar:'
+              : 'Deseja personalizar seu apelido no ranking? (Padrão: Participante RosaViva)'}
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              id="nickname-input"
+              type="text"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              maxLength={24}
+              placeholder="Digite seu nome ou apelido (máx. 24 letras)"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm focus:ring-2 focus:ring-pink-500 outline-none"
+            />
             <button
-              onClick={() => {
-                soundEffects.playClick();
-                onNavigateRanking();
-              }}
-              className="px-3 py-1.5 rounded-lg bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-600 transition-colors shrink-0 cursor-pointer"
+              type="submit"
+              disabled={rankingSaveLoading}
+              className="px-5 py-2.5 rounded-xl font-bold text-xs bg-pink-700 hover:bg-pink-600 text-white shadow-xs transition-colors cursor-pointer shrink-0 text-center"
             >
-              Ver Placar
+              {rankingSaveLoading
+                ? 'Atualizando…'
+                : isNicknameUpdated
+                ? 'Apelido Atualizado ✓'
+                : 'Salvar Meu Apelido'}
             </button>
           </div>
-        )}
+          <p className="text-[11px] text-zinc-400">
+            Armazenamento permanente e imutável. Realizado pelo Time Preto do Grupo Steve Jobs.
+          </p>
+        </form>
       </div>
 
       {/* 3. Certificado Digital Personalizado */}

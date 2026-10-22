@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Moon,
@@ -35,7 +36,24 @@ export const AccessibilityModal: React.FC<AccessibilityModalProps> = ({
   isReadingSpeech,
   onToggleSpeech,
 }) => {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock body scroll when modal is active to prevent page shift behind modal
+  useEffect(() => {
+    if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !mounted) return null;
 
   const handleActivateVLibras = () => {
     soundEffects.playClick();
@@ -61,17 +79,33 @@ export const AccessibilityModal: React.FC<AccessibilityModalProps> = ({
     { id: 'xl', label: 'Extra', sample: 'Aa' },
   ];
 
-  return (
+  // Portaled directly to document.body: Immune to CSS filter containing-block bugs
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="accessibility-modal-title"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100dvh',
+        zIndex: 99999,
+        margin: 0,
+      }}
+      onClick={onClose}
     >
       {/* Modal Container: Solidly centered with fixed height budget and internal scroll */}
-      <div className="bg-white dark:bg-zinc-900 border border-pink-200 dark:border-zinc-800 rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl text-zinc-800 dark:text-zinc-100 transition-colors overflow-hidden">
+      <div
+        className="bg-white dark:bg-zinc-900 border border-pink-200 dark:border-zinc-800 rounded-3xl max-w-lg w-full max-h-[85vh] max-h-[85dvh] flex flex-col shadow-2xl text-zinc-800 dark:text-zinc-100 transition-colors overflow-hidden my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Fixed Header */}
-        <div className="p-4 sm:p-5 border-b border-pink-100 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-white/95 dark:bg-zinc-900/95">
+        <div className="p-4 sm:p-5 border-b border-pink-100 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-white dark:bg-zinc-900">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300">
               <Sparkles className="w-5 h-5" />
@@ -91,6 +125,7 @@ export const AccessibilityModal: React.FC<AccessibilityModalProps> = ({
               soundEffects.playClick();
               onClose();
             }}
+            type="button"
             className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors cursor-pointer"
             aria-label="Fechar painel de acessibilidade"
           >
@@ -119,13 +154,13 @@ export const AccessibilityModal: React.FC<AccessibilityModalProps> = ({
                     type="button"
                     className={`p-3 rounded-2xl border text-left flex items-start justify-between transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-pink-50 dark:bg-pink-950/50 border-pink-500 text-pink-950 dark:text-pink-100 ring-2 ring-pink-500/30 shadow-xs'
+                        ? 'bg-pink-50 dark:bg-pink-950/50 border-pink-500 text-pink-950 dark:text-pink-100 ring-2 ring-pink-500/30 shadow-xs font-bold'
                         : 'bg-zinc-50 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 hover:border-pink-300 text-zinc-700 dark:text-zinc-300'
                     }`}
                   >
                     <div>
-                      <div className="font-bold text-xs">{opt.label}</div>
-                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      <div className="text-xs">{opt.label}</div>
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-normal">
                         {opt.desc}
                       </div>
                     </div>
@@ -316,4 +351,6 @@ export const AccessibilityModal: React.FC<AccessibilityModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };

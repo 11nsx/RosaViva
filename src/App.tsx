@@ -25,6 +25,7 @@ import { ResultsView } from './components/ResultsView';
 
 import { speechService } from './services/speechService';
 import { soundEffects } from './services/soundEffects';
+import { saveRankingEntry } from './services/rankingService';
 
 export default function App() {
   // Navigation State
@@ -36,6 +37,7 @@ export default function App() {
   const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
   const [timerSeconds, setTimerSeconds] = useState<number>(0);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+  const [currentRankingId, setCurrentRankingId] = useState<string | null>(null);
 
   // Accessibility State (with localStorage persistence)
   const [accessibility, setAccessibility] = useState<AccessibilitySettings>(() => {
@@ -121,6 +123,7 @@ export default function App() {
     setCurrentQuestionIndex(0);
     setUserAnswers([]);
     setTimerSeconds(0);
+    setCurrentRankingId(null);
     setIsTimerRunning(true);
     setQuizStage('playing');
     setActiveTab('quiz');
@@ -132,6 +135,7 @@ export default function App() {
     setCurrentQuestionIndex(0);
     setUserAnswers([]);
     setTimerSeconds(0);
+    setCurrentRankingId(null);
     setIsTimerRunning(true);
     setQuizStage('playing');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -164,6 +168,28 @@ export default function App() {
       setIsTimerRunning(false);
       setQuizStage('results');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Automatically register the participant's score immediately into persistent ranking
+      const finalScore = userAnswers.reduce((acc, curr) => (curr.isCorrect ? acc + 10 : acc), 0);
+      const finalCorrect = userAnswers.filter((a) => a.isCorrect).length;
+      const finalPercentage = Math.round((finalCorrect / 10) * 100);
+      const mins = Math.floor(timerSeconds / 60);
+      const secs = timerSeconds % 60;
+      const formattedTime = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      const entryId = 'rank_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+
+      setCurrentRankingId(entryId);
+
+      saveRankingEntry({
+        id: entryId,
+        nickname: 'Participante RosaViva',
+        score: finalScore,
+        correctCount: finalCorrect,
+        totalQuestions: 10,
+        percentage: finalPercentage,
+        timeSeconds: timerSeconds,
+        formattedTime,
+      }).catch((err) => console.warn('Auto-save ranking error:', err));
     }
   };
 
@@ -212,91 +238,93 @@ export default function App() {
   };
 
   return (
-    <div
-      className={`min-h-screen flex flex-col transition-colors duration-200 bg-[#FFF8FA] dark:bg-[#140D12] text-[#2D1E27] dark:text-[#F5EDF2] font-body ${getColorBlindnessFilterClass()}`}
-    >
-      {/* 1. Barra de Acessibilidade Rápida */}
-      <AccessibilityBar
-        settings={accessibility}
-        onUpdateSettings={(newSettings) =>
-          setAccessibility((prev) => ({ ...prev, ...newSettings }))
-        }
-        onOpenAccessibilityModal={() => setIsAccessibilityModalOpen(true)}
-        onOpenLibrasModal={() => setIsLibrasModalOpen(true)}
-        isReadingText={isReadingSpeech}
-        onToggleSpeech={handleToggleSpeech}
-      />
+    <div className="min-h-screen flex flex-col transition-colors duration-200 bg-[#FFF8FA] dark:bg-[#140D12] text-[#2D1E27] dark:text-[#F5EDF2] font-body relative">
+      {/* Content wrapper with Color Blindness filter strictly confined to visual content */}
+      <div className={`flex-1 flex flex-col ${getColorBlindnessFilterClass()}`}>
+        {/* 1. Barra de Acessibilidade Rápida */}
+        <AccessibilityBar
+          settings={accessibility}
+          onUpdateSettings={(newSettings) =>
+            setAccessibility((prev) => ({ ...prev, ...newSettings }))
+          }
+          onOpenAccessibilityModal={() => setIsAccessibilityModalOpen(true)}
+          onOpenLibrasModal={() => setIsLibrasModalOpen(true)}
+          isReadingText={isReadingSpeech}
+          onToggleSpeech={handleToggleSpeech}
+        />
 
-      {/* 2. Cabeçalho com Logo Oficial e Navegação */}
-      <Header
-        activeTab={activeTab}
-        onNavigateTab={handleNavigateTab}
-        darkMode={accessibility.darkMode}
-        onToggleDarkMode={handleToggleDarkMode}
-        onOpenAccessibilityModal={() => setIsAccessibilityModalOpen(true)}
-      />
+        {/* 2. Cabeçalho com Logo Oficial e Navegação */}
+        <Header
+          activeTab={activeTab}
+          onNavigateTab={handleNavigateTab}
+          darkMode={accessibility.darkMode}
+          onToggleDarkMode={handleToggleDarkMode}
+          onOpenAccessibilityModal={() => setIsAccessibilityModalOpen(true)}
+        />
 
-      {/* 3. Aviso Educativo */}
-      <NoticeBar />
+        {/* 3. Aviso Educativo */}
+        <NoticeBar />
 
-      {/* 4. Conteúdo Principal das Abas */}
-      <main className="flex-1 flex flex-col justify-center py-4">
-        {activeTab === 'inicio' && <HomeLanding onNavigateTab={handleNavigateTab} />}
+        {/* 4. Conteúdo Principal das Abas */}
+        <main className="flex-1 flex flex-col justify-center py-4">
+          {activeTab === 'inicio' && <HomeLanding onNavigateTab={handleNavigateTab} />}
 
-        {activeTab === 'informacoes' && <InformacoesPage onNavigateTab={handleNavigateTab} />}
+          {activeTab === 'informacoes' && <InformacoesPage onNavigateTab={handleNavigateTab} />}
 
-        {activeTab === 'sinais' && <SinaisPrevencaoPage onNavigateTab={handleNavigateTab} />}
+          {activeTab === 'sinais' && <SinaisPrevencaoPage onNavigateTab={handleNavigateTab} />}
 
-        {activeTab === 'rastreamento' && <RastreamentoPage onNavigateTab={handleNavigateTab} />}
+          {activeTab === 'rastreamento' && <RastreamentoPage onNavigateTab={handleNavigateTab} />}
 
-        {activeTab === 'mitos' && <MitosVerdadesPage />}
+          {activeTab === 'mitos' && <MitosVerdadesPage />}
 
-        {activeTab === 'fontes' && <FontesPage onNavigateTab={handleNavigateTab} />}
+          {activeTab === 'fontes' && <FontesPage onNavigateTab={handleNavigateTab} />}
 
-        {activeTab === 'ranking' && <RankingPage onNavigateTab={handleNavigateTab} />}
+          {activeTab === 'ranking' && <RankingPage onNavigateTab={handleNavigateTab} />}
 
-        {activeTab === 'quiz' && (
-          <div className="w-full">
-            {quizStage === 'intro' && (
-              <QuizIntroView onStartQuiz={handleStartQuiz} />
-            )}
+          {activeTab === 'quiz' && (
+            <div className="w-full">
+              {quizStage === 'intro' && (
+                <QuizIntroView onStartQuiz={handleStartQuiz} />
+              )}
 
-            {quizStage === 'playing' && (
-              <QuizQuestionCard
-                question={QUIZ_QUESTIONS[currentQuestionIndex]}
-                questionIndex={currentQuestionIndex}
-                totalQuestions={QUIZ_QUESTIONS.length}
-                currentScore={totalScore}
-                correctCount={correctCount}
-                elapsedSeconds={timerSeconds}
-                onAnswerConfirmed={handleAnswerConfirmed}
-                onNextQuestion={handleNextQuestion}
-                isLastQuestion={currentQuestionIndex === QUIZ_QUESTIONS.length - 1}
-              />
-            )}
+              {quizStage === 'playing' && (
+                <QuizQuestionCard
+                  question={QUIZ_QUESTIONS[currentQuestionIndex]}
+                  questionIndex={currentQuestionIndex}
+                  totalQuestions={QUIZ_QUESTIONS.length}
+                  currentScore={totalScore}
+                  correctCount={correctCount}
+                  elapsedSeconds={timerSeconds}
+                  onAnswerConfirmed={handleAnswerConfirmed}
+                  onNextQuestion={handleNextQuestion}
+                  isLastQuestion={currentQuestionIndex === QUIZ_QUESTIONS.length - 1}
+                />
+              )}
 
-            {quizStage === 'results' && (
-              <ResultsView
-                questions={QUIZ_QUESTIONS}
-                userAnswers={userAnswers}
-                totalScore={totalScore}
-                totalTimeSeconds={timerSeconds}
-                onRestartQuiz={handleRestartQuiz}
-                onNavigateHome={() => {
-                  setQuizStage('intro');
-                  handleNavigateTab('inicio');
-                }}
-                onNavigateRanking={() => handleNavigateTab('ranking')}
-              />
-            )}
-          </div>
-        )}
-      </main>
+              {quizStage === 'results' && (
+                <ResultsView
+                  questions={QUIZ_QUESTIONS}
+                  userAnswers={userAnswers}
+                  totalScore={totalScore}
+                  totalTimeSeconds={timerSeconds}
+                  rankingId={currentRankingId}
+                  onRestartQuiz={handleRestartQuiz}
+                  onNavigateHome={() => {
+                    setQuizStage('intro');
+                    handleNavigateTab('inicio');
+                  }}
+                  onNavigateRanking={() => handleNavigateTab('ranking')}
+                />
+              )}
+            </div>
+          )}
+        </main>
 
-      {/* 5. Rodapé com Atribuição ao Time Preto do Grupo Steve Jobs */}
-      <Footer />
+        {/* 5. Rodapé com Atribuição ao Time Preto do Grupo Steve Jobs */}
+        <Footer />
+      </div>
 
-      {/* 6. Central de Acessibilidade Intuitiva */}
+      {/* 6. Central de Acessibilidade Intuitiva (Strictly outside filtered container) */}
       <AccessibilityModal
         isOpen={isAccessibilityModalOpen}
         onClose={() => setIsAccessibilityModalOpen(false)}
@@ -312,7 +340,7 @@ export default function App() {
         onToggleSpeech={handleToggleSpeech}
       />
 
-      {/* 7. Modal de Guia em Libras */}
+      {/* 7. Modal de Guia em Libras (Strictly outside filtered container) */}
       <LibrasGuideModal
         isOpen={isLibrasModalOpen}
         onClose={() => setIsLibrasModalOpen(false)}
